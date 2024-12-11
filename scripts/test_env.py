@@ -22,8 +22,8 @@ def plot_frame(ax, T, frame_name="Frame", color='r', length=1.0):
     ax.quiver(*origin, *(z_axis - origin), color='b', label=f"{frame_name} Z", arrow_length_ratio=0.1)
 
 # Create controller 
-Kp = np.array([1.5,1.5,2.0,10,10,10], dtype=np.float16)
-Kd = np.array([2.5,2.5,5.0,10,10,10], dtype=np.float16)
+Kp = np.array([1.4,1.4,2.1,10,10,10], dtype=np.float16)
+Kd = np.array([2.0,2.0,5.0,10,10,10], dtype=np.float16)
 controller = Controller(Kp, Kd)
 actions = np.zeros((1,6))
 
@@ -46,7 +46,7 @@ time_step = sim_time/steps
 
 # Main simulation loop
 num_steps = 0
-for i in range(time_step):
+for i in range(steps):
     
     # calculate require wrench from controller 
     desire_wrench = controller.update_PD(ref,state)
