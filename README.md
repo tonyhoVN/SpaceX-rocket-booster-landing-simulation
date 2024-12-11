@@ -2,7 +2,7 @@
 
 Simulation of the return process of spaceship booster to the launcher. The booster is catched by chopstick mechanism.
 
-![Image Description](/images/simulation_env.png)
+<img src="/images/simulation_env.png" width="480" height="480">
 
 ## Install Requirements
 Project works in python 3.10.
