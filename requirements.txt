@@ -1,0 +1,4 @@
+matplotlib==3.9.3
+numpy==1.26.4
+open3d==0.18.0
+scipy==1.7.0
