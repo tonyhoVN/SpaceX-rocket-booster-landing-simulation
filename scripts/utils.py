@@ -313,20 +313,20 @@ class Booster():
             log_colored_message("MISSION SUCCESS", "GREEN")
             return True
         
-        if abs(roll) >= self.threshold_angular or \
-           abs(pitch) >= self.threshold_angular or \
-           abs(yaw) >= self.threshold_angular:
-            log_colored_message("ROTATION FAIL", "YELLOW")
-            return True
+        # if abs(roll) >= self.threshold_angular or \
+        #    abs(pitch) >= self.threshold_angular or \
+        #    abs(yaw) >= self.threshold_angular:
+        #     log_colored_message("ROTATION FAIL", "YELLOW")
+        #     return True
         
-        if X[0] < -1 or \
-           X[1] < -1 or \
-           X[2] < -1 or \
-            X[0] > self.initial_pose[0] + 0.5 or \
-            X[1] > self.initial_pose[1] + 0.5 or \
-            X[2] > self.initial_pose[2] + 0.5:
-            log_colored_message("LOCATION FAIL", "RED")
-            return True
+        # if X[0] < -1 or \
+        #    X[1] < -1 or \
+        #    X[2] < -1 or \
+        #     X[0] > self.initial_pose[0] + 0.5 or \
+        #     X[1] > self.initial_pose[1] + 0.5 or \
+        #     X[2] > self.initial_pose[2] + 0.5:
+        #     log_colored_message("LOCATION FAIL", "RED")
+        #     return True
 
         return False
 
@@ -415,8 +415,8 @@ class Controller():
         # rotation error in local frame
         R_error = R_mat.inv()
         q_error = R.as_quat(R_error) #x,y,z,w
-        # error_eulers_local = sgn(x) * q_error[0:3]
-        error_eulers_local = -np.array([roll,pitch,yaw])
+        error_eulers_local = sgn(x) * q_error[0:3]
+        # error_eulers_local = -np.array([roll,pitch,yaw])
         error_eulers_dot_local = -np.array([roll_dot,pitch_dot,yaw_dot])
         
         # Calculate desired force

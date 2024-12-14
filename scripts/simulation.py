@@ -23,7 +23,7 @@ def plot_frame(ax, T, frame_name="Frame", color='r', length=1.0):
 
 # Create controller 
 Kp = np.array([1.4,1.4,2.1,10,10,10], dtype=np.float16)
-Kd = np.array([2.0,2.0,5.0,10,10,10], dtype=np.float16)
+Kd = np.array([2.1,2.1,5.0,10,10,10], dtype=np.float16)
 controller = Controller(Kp, Kd)
 actions = np.zeros((1,6))
 
@@ -47,6 +47,7 @@ time_step = sim_time/steps
 # Main simulation loop
 num_steps = 0
 for i in range(steps):
+    num_steps += 1
     
     # calculate require wrench from controller 
     desire_wrench = controller.update_PD(ref,state)
@@ -59,24 +60,6 @@ for i in range(steps):
     render_delay = 0.01 if i < 100 else 0.01
     env.render(render_delay)
 
-    num_steps += 1
-    # # Transform the axes vectors
-    # T = make_TF(state[0], state[1], state[2], env.R)
-    # T1 = make_TF(state[0], state[1], state[2],np.eye(3))
-
-    # # Clear previous plot
-    # ax.cla()
-    # # Plot the updated frame
-    # plot_frame(ax, np.eye(4), frame_name="Origin", color='k')  # Origin frame
-    # plot_frame(ax, T, frame_name=f"Step", color='r')  # Updated frame
-    # plot_frame(ax, T1, frame_name=f"Step", color='b')
-
-    # # Set axis limits
-    # ax.set_xlim([-1, 5])
-    # ax.set_ylim([-1, 5])
-    # ax.set_zlim([0, 5])
-    # plt.pause(0.01)
-
     # add state
     actions = np.vstack((actions,action))
     states = np.vstack((states,state))
@@ -84,6 +67,7 @@ for i in range(steps):
     # check done
     if done: break  
 
+# Keep Open3D window run
 print("Number of steps: " + str(num_steps))
 env.vis.run()
 env.close()
