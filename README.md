@@ -12,5 +12,5 @@ pip install -r requirement.txt
 ```
 
 ## Run Simulation
-Run file test_env.py in scripts folder to play simulation 
+Run file simulation.py in scripts folder to play simulation 
 
