@@ -3,7 +3,7 @@
 This project simulates the return process of a spacecraft booster to its initial launch platform. The booster is designed to execute a controlled descent and align precisely for recovery by a chopstick mechanism. The simulation incorporates Linear Quadratic Regulator (LQR) controllers to achieve optimal control of the booster during its descent and positioning phases. 
 
 <!-- <img src="/images/simulation_env.png" width="480" height="480"> -->
-<img src="/images/output.gif" width="640" height="480">
+<img src="/images/output.gif">
 
 ## Install
 Project works in python 3.10
