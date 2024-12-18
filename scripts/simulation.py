@@ -29,7 +29,7 @@ actions = np.zeros((1,6))
 
 # initial condition and reference
 ref = np.array([0.3,0.3,0.3])
-initial_pose = np.array([2.0, 2.0, 7.0, 0.3, 0.3, 0.0])
+initial_pose = np.array([2.0, 2.0, 7.0, 0.3, 0.3, 0.2])
 
 # Create environment
 env = Booster(render_mode=True)
@@ -42,7 +42,9 @@ steps = int(real_time/0.01)
 sim_time = 100
 time_step = sim_time/steps
 
-# create figure
+# create gif
+images = []
+gif = False
 
 # Main simulation loop
 num_steps = 0
@@ -57,8 +59,14 @@ for i in range(steps):
     state, reward, done = env.step(action)
     
     # render 
-    render_delay = 0.01 if i < 100 else 0.01
+    render_delay = 0.015 if i < 100 else 0.01
     env.render(render_delay)
+
+    # Save scene image to create gif 
+    if gif: 
+        image = env.capture_scene()
+        if (num_steps%20) == 0:
+            images.append(image)
 
     # add state
     actions = np.vstack((actions,action))
@@ -69,7 +77,7 @@ for i in range(steps):
 
 # Keep Open3D window run
 print("Number of steps: " + str(num_steps))
-env.vis.run()
+env.run()
 env.close()
 
 # Plot state of booster  
@@ -109,3 +117,16 @@ ax4.set_ylabel('Force/Torque (N/Nm)')
 ax4.legend(['Fx','Fy','Fz','Mx','My','Mz'])
 
 plt.show()
+
+# Create GIF image 
+if gif:
+    folder_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    image_path = os.path.abspath(os.path.join(folder_path, "images/output.gif"))
+    images[0].save(
+        image_path,
+        save_all=True,
+        append_images=images[1:],
+        duration=200,  # Duration of each frame in milliseconds
+        loop=0  # Loop indefinitely
+    )
+    print("GIF saved as output.gif")

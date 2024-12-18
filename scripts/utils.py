@@ -3,6 +3,8 @@ import numpy as np
 import time
 from scipy.spatial.transform import Rotation as R
 from scipy.optimize import lsq_linear
+from PIL import Image
+import os
 
 def log_colored_message(message, color="GREEN"):
     """
@@ -90,7 +92,6 @@ def draw_force(force: np.array, point=np.ones(3), R=np.ones(3)):
     return arrow
 
 def create_scene(initial_transform = np.eye(4)):
-    import os
     # Load booster
     dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     
@@ -116,23 +117,27 @@ def create_scene(initial_transform = np.eye(4)):
     body = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.2)
     body.transform(initial_transform)
 
+    # Create Point cloud to visualize trajectory
+    pcd = o3d.geometry.PointCloud()
+    pcd.points = o3d.utility.Vector3dVector(initial_transform[:3,3].reshape(1,-1))
+
     # Combine objects into a scene
-    scene_objects = [booster, body, chopstick, origin]
+    scene_objects = [booster, body, pcd, chopstick , origin]
 
     # create visualization 
-    camera_parameters = o3d.io.read_pinhole_camera_parameters(os.path.abspath(os.path.join(dir, "scripts/ScreenCamera_2024.json")))
+    camera_parameters = o3d.io.read_pinhole_camera_parameters(os.path.abspath(os.path.join(dir, "scripts/ScreenCamera.json")))
 
     vis = o3d.visualization.Visualizer()
-    vis.create_window(width=1500, 
-                      height=1200)
+    vis.create_window(width=camera_parameters.intrinsic.width, 
+                      height=camera_parameters.intrinsic.height)
     
     # Add object
     for obj in scene_objects:
         vis.add_geometry(obj)
 
-    # # Set the camera parameters
+    # Set the camera view parameters
     view_control = vis.get_view_control()
-    view_control.convert_from_pinhole_camera_parameters(camera_parameters)
+    view_control.convert_from_pinhole_camera_parameters(camera_parameters,  allow_arbitrary=True)
 
     return vis, scene_objects, camera_parameters
 
@@ -140,8 +145,6 @@ def reset_mesh(mesh, T):
     """
     Reset mesh to original 
     """
-    # mesh.translate(-T[:3, 3], relative=True)
-    # mesh.rotate(T[:3, :3].T)
     mesh.transform(np.linalg.inv(T))
 
 class Booster():
@@ -150,7 +153,7 @@ class Booster():
         # State space
         self.state = None # x,y,z,yaw,pitch,roll,x_dot,y_dot,z_dot,yaw_dot,pitch_dot,roll_dot 
 
-        # parameter 
+        # Property 
         self.mass = 1 # mass 
         self.I0 = np.eye(3) # tensor
         self.I0_inv = np.eye(3)
@@ -161,19 +164,20 @@ class Booster():
         self.R = np.eye(3, dtype=np.float16) # rotation matrix
         self.T = np.eye(4, dtype=np.float16)
 
-        # simulation 
+        # Simulation and visualization parameters
         self.DT = 0.01
         self.render_mode = render_mode
         self.vis = None
         self.scene_objects = None
         self.camera_parameters = None
+        self.pcd = None # pointcloud to visualize trajectory 
 
         # Dynamic parameters
         self.p = np.zeros((3,1), dtype=np.float16)
         self.L = np.zeros((3,1), dtype=np.float16)
         self.w = np.zeros((3,1), dtype=np.float16)
 
-        # limit for ending
+        # Limit for termination
         self.threshold_linear = 0.1
         self.threshold_angular = np.deg2rad(45)
         
@@ -203,6 +207,7 @@ class Booster():
         # create visualization scene
         if self.render_mode:
             self.vis, self.scene_objects, self.camera_parameters = create_scene(self.T)
+            self.pcd = self.scene_objects[2]
     
         return self.state
 
@@ -313,20 +318,20 @@ class Booster():
             log_colored_message("MISSION SUCCESS", "GREEN")
             return True
         
-        # if abs(roll) >= self.threshold_angular or \
-        #    abs(pitch) >= self.threshold_angular or \
-        #    abs(yaw) >= self.threshold_angular:
-        #     log_colored_message("ROTATION FAIL", "YELLOW")
-        #     return True
+        if abs(roll) >= self.threshold_angular or \
+           abs(pitch) >= self.threshold_angular or \
+           abs(yaw) >= self.threshold_angular:
+            log_colored_message("ROTATION FAIL", "YELLOW")
+            return True
         
-        # if X[0] < -1 or \
-        #    X[1] < -1 or \
-        #    X[2] < -1 or \
-        #     X[0] > self.initial_pose[0] + 0.5 or \
-        #     X[1] > self.initial_pose[1] + 0.5 or \
-        #     X[2] > self.initial_pose[2] + 0.5:
-        #     log_colored_message("LOCATION FAIL", "RED")
-        #     return True
+        if X[0] < -1 or \
+           X[1] < -1 or \
+           X[2] < -1 or \
+            X[0] > self.initial_pose[0] + 0.5 or \
+            X[1] > self.initial_pose[1] + 0.5 or \
+            X[2] > self.initial_pose[2] + 0.5:
+            log_colored_message("LOCATION FAIL", "RED")
+            return True
 
         return False
 
@@ -345,8 +350,10 @@ class Booster():
         # Update the visualization
         self.scene_objects[0].transform(self.T)
         self.scene_objects[1].transform(self.T)
+        self.pcd.points.extend([self.state[:3]])
         self.vis.update_geometry(self.scene_objects[0])
         self.vis.update_geometry(self.scene_objects[1])
+        self.vis.update_geometry(self.pcd)
 
         # Set the camera parameters
         
@@ -371,6 +378,15 @@ class Booster():
         close env
         """
         self.vis.close()
+
+    def capture_scene(self):
+        """
+        Capture scene image to create gif
+        """
+        float_buffer = self.vis.capture_screen_float_buffer(do_render=False)
+        scene_image = (np.asarray(float_buffer) * 255).astype(np.uint8)
+        scene_image = Image.fromarray(scene_image)
+        return scene_image
 
 def sgn(x): return (x/abs(x))
 

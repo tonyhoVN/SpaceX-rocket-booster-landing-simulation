@@ -1,8 +1,9 @@
 clear;clc
 
 % Model Discrete System
+m = 1.0;
 A = [0 1; 0 0];
-B = [0 1]';
+B = [0 1/m]';
 C = eye(2);
 D = [0 0]';
 Ts = 0.01;
