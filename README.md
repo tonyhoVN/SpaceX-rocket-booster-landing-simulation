@@ -21,4 +21,4 @@ Run file __scripts/simulation.py__ to play simulation.
 ## Tunning LQR Controller 
 In Matlab file __scripts/LQR_tunning.m__, change Q and R parameters to customize behavior of LQR controller. The control result is demonstrated in following figure
 
-<img src="/images/control_result.png" width="480" height="480">
+<img src="/images/control_result.png" width="640" height="480">
