@@ -1,30 +1,13 @@
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from utils import *
-
-# Function to plot a frame represented by a transformation matrix
-def plot_frame(ax, T, frame_name="Frame", color='r', length=1.0):
-    # Extract origin and rotation matrix
-    origin = T[:3, 3]
-    R = T[:3, :3]
-
-    # Define axes
-    x_axis = origin + R[:, 0] * length  # X-axis
-    y_axis = origin + R[:, 1] * length  # Y-axis
-    z_axis = origin + R[:, 2] * length  # Z-axis
-
-    # Plot origin
-    ax.scatter(*origin, color=color, label=f"{frame_name} Origin")
-
-    # Plot axes
-    ax.quiver(*origin, *(x_axis - origin), color='r', label=f"{frame_name} X", arrow_length_ratio=0.1)
-    ax.quiver(*origin, *(y_axis - origin), color='g', label=f"{frame_name} Y", arrow_length_ratio=0.1)
-    ax.quiver(*origin, *(z_axis - origin), color='b', label=f"{frame_name} Z", arrow_length_ratio=0.1)
+import numpy as np
+import os 
+from environment import *
+from controller import LQR_Controller
 
 # Create controller 
 Kp = np.array([1.4,1.4,2.1,10,10,10], dtype=np.float16)
 Kd = np.array([2.1,2.1,5.0,10,10,10], dtype=np.float16)
-controller = Controller(Kp, Kd)
+controller = LQR_Controller(Kp, Kd)
 actions = np.zeros((1,6))
 
 # initial condition and reference
