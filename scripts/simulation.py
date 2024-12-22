@@ -1,39 +1,24 @@
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from utils import *
+import numpy as np
+import os 
+from environment import *
+from controller import LQR_Controller, MPC_Controller
+import argparse
 
-# Function to plot a frame represented by a transformation matrix
-def plot_frame(ax, T, frame_name="Frame", color='r', length=1.0):
-    # Extract origin and rotation matrix
-    origin = T[:3, 3]
-    R = T[:3, :3]
+# Parse arguments
+parser = argparse.ArgumentParser(description='Simulate booster landing')
+parser.add_argument('--controller', help='Select controller for simulation', default='LQR', type=str, choices=['LQR', 'MPC'])
+args = parser.parse_args()
 
-    # Define axes
-    x_axis = origin + R[:, 0] * length  # X-axis
-    y_axis = origin + R[:, 1] * length  # Y-axis
-    z_axis = origin + R[:, 2] * length  # Z-axis
-
-    # Plot origin
-    ax.scatter(*origin, color=color, label=f"{frame_name} Origin")
-
-    # Plot axes
-    ax.quiver(*origin, *(x_axis - origin), color='r', label=f"{frame_name} X", arrow_length_ratio=0.1)
-    ax.quiver(*origin, *(y_axis - origin), color='g', label=f"{frame_name} Y", arrow_length_ratio=0.1)
-    ax.quiver(*origin, *(z_axis - origin), color='b', label=f"{frame_name} Z", arrow_length_ratio=0.1)
-
-# Create controller 
-Kp = np.array([1.4,1.4,2.1,10,10,10], dtype=np.float16)
-Kd = np.array([2.1,2.1,5.0,10,10,10], dtype=np.float16)
-controller = Controller(Kp, Kd)
-actions = np.zeros((1,6))
-
+#### Simulation setup ####
 # initial condition and reference
-ref = np.array([0.3,0.3,0.3])
-initial_pose = np.array([2.0, 2.0, 7.0, 0.3, 0.3, 0.2])
+target_pose = np.array([0.3,0.3,0.3]) # p(x, y, z)
+ref_state = np.array([0.3,0.3,0.3,0,0,0,0,0,0,0,0,0]) # p, euler angles, v, omega
+initial_pose = np.array([4.0, 4.0, 7.0, 0.3, 0.3, 0.2])
 
 # Create environment
 env = Booster(render_mode=True)
-state = env.reset(initial_pose=initial_pose, final_target=ref)
+state = env.reset(initial_pose=initial_pose, final_target=target_pose)
 states = state
 
 # Simulation setup
@@ -46,13 +31,28 @@ time_step = sim_time/steps
 images = []
 gif = False
 
-# Main simulation loop
+#### Create controller #### 
+# Maximum and minimum thrust
+u_min = np.array([-4.0, -4.0, 0.0, -2.0, -2.0, -2.0]) 
+u_max = np.array([4.0, 4.0, 15.0, 2.0, 2.0, 2.0])
+
+# Kp and Kd gains 
+Kp = np.array([1.4,1.4,2.1,10,10,10], dtype=np.float16)
+Kd = np.array([2.1,2.1,5.0,10,10,10], dtype=np.float16)
+
+if args.controller == 'LQR':
+    controller = LQR_Controller(Kp, Kd, u_min, u_max)
+elif args.controller == 'MPC':
+    controller = MPC_Controller(env.mass, env.I0_inv, u_min, u_max, dT=time_step*10, N=15)
+actions = np.zeros((1,6))
+
+#### Main simulation loop ####
 num_steps = 0
 for i in range(steps):
     num_steps += 1
     
-    # calculate require wrench from controller 
-    desire_wrench = controller.update_PD(ref,state)
+    # calculate desire input
+    desire_wrench = controller.update_input(ref_state,state)
     action = controller.update_thrust(desire_wrench)
     
     # perform action
@@ -83,7 +83,7 @@ env.close()
 # Plot state of booster  
 fig = plt.figure()
 
-ax1 = fig.add_subplot(2, 2, 1, projection='3d')
+ax1 = fig.add_subplot(2, 3, 1, projection='3d')
 ax1.set_aspect('equal')
 ax1.plot3D(states[:,0], states[:,1], states[:,2])
 ax1.set_title("Booster Trajectory")
@@ -91,7 +91,7 @@ ax1.set_xlabel('X')
 ax1.set_ylabel('Y')
 ax1.set_zlabel('Z')
 
-ax2 = fig.add_subplot(2, 2, 2)
+ax2 = fig.add_subplot(2, 3, 2)
 ax2.plot(states[:,0], label='x')
 ax2.plot(states[:,1], label='y')
 ax2.plot(states[:,2], label='z')
@@ -100,7 +100,7 @@ ax2.set_xlabel('Time step')
 ax2.set_ylabel('Position (m)')
 ax2.legend()
 
-ax3 = fig.add_subplot(2, 2, 3)
+ax3 = fig.add_subplot(2, 3, 3)
 ax3.plot(states[:,3], label='roll')
 ax3.plot(states[:,4], label='pitch')
 ax3.plot(states[:,5], label='yaw')
@@ -109,12 +109,30 @@ ax3.set_xlabel('Time step')
 ax3.set_ylabel('Euler angles (rad)')
 ax3.legend()
 
-ax4 = fig.add_subplot(2, 2, 4)
-ax4.plot(actions)
-ax4.set_title("Effort vs Time Step")
+ax4 = fig.add_subplot(2, 3, 4)
+ax4.plot(states[:,6], label='vx')
+ax4.plot(states[:,7], label='vy')
+ax4.plot(states[:,8], label='vz')
+ax4.set_title("Velocity vs Time Step")
 ax4.set_xlabel('Time step')
-ax4.set_ylabel('Force/Torque (N/Nm)')
-ax4.legend(['Fx','Fy','Fz','Mx','My','Mz'])
+ax4.set_ylabel('Velocity (m/s)')
+ax4.legend()
+
+ax5 = fig.add_subplot(2, 3, 5)
+ax5.plot(states[:,9], label='wx')
+ax5.plot(states[:,10], label='wy')
+ax5.plot(states[:,11], label='wz')
+ax5.set_title("Angular Velocity vs Time Step")
+ax5.set_xlabel('Time step')
+ax5.set_ylabel('Angular Velocity (rad/s)')
+ax5.legend()
+
+ax6 = fig.add_subplot(2, 3, 6)
+ax6.plot(actions)
+ax6.set_title("Effort vs Time Step")
+ax6.set_xlabel('Time step')
+ax6.set_ylabel('Force/Torque (N/Nm)')
+ax6.legend(['Fx','Fy','Fz','Mx','My','Mz'])
 
 plt.show()
 
