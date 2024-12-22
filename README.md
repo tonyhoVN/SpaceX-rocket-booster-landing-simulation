@@ -19,17 +19,25 @@ Project works in python 3.10
     ```
 
 ## Run Simulation
-Run file __scripts/simulation.py__ to play simulation.
+- Run file __scripts/simulation.py__ to play simulation.
+- For LQR controller 
+    ```
+    python scripts/simulation.py --controller 'LQR'
+    ```
+- For MPC controller 
+    ```
+    python scripts/simulation.py --controller 'MPC'
+    ```
 
-## Control Result
+## Modify Controller
 To customize the behavior of the controller for each state, you can modify the cost matrices Q and R. 
 
 ### 1. LQR Controller
 - Matlab file [LQR_tunning.m](scripts/LQR_tunning.m) will calculate K = [Kp, Kd] according to given Q and R.
-
 - The control result is shown in the following figure
 ![LQR result](images/LQR_control_result.png)
 
 ### 2. MPC Controller
+- Tune time step dT and horizontal prediction N for each situation 
 - The control result is shown in the following figure
 ![MPC result](images/MPC_control_result.png)

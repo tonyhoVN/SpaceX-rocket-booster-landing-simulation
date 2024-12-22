@@ -3,6 +3,12 @@ import numpy as np
 import os 
 from environment import *
 from controller import LQR_Controller, MPC_Controller
+import argparse
+
+# Parse arguments
+parser = argparse.ArgumentParser(description='Simulate booster landing')
+parser.add_argument('--controller', help='Select controller for simulation', default='LQR', type=str, choices=['LQR', 'MPC'])
+args = parser.parse_args()
 
 #### Simulation setup ####
 # initial condition and reference
@@ -33,8 +39,11 @@ u_max = np.array([4.0, 4.0, 15.0, 2.0, 2.0, 2.0])
 # Kp and Kd gains 
 Kp = np.array([1.4,1.4,2.1,10,10,10], dtype=np.float16)
 Kd = np.array([2.1,2.1,5.0,10,10,10], dtype=np.float16)
-controller = LQR_Controller(Kp, Kd, u_min, u_max)
-# controller = MPC_Controller(env.mass, env.I0_inv, u_min, u_max, dT=time_step*10, N=15)
+
+if args.controller == 'LQR':
+    controller = LQR_Controller(Kp, Kd, u_min, u_max)
+elif args.controller == 'MPC':
+    controller = MPC_Controller(env.mass, env.I0_inv, u_min, u_max, dT=time_step*10, N=15)
 actions = np.zeros((1,6))
 
 #### Main simulation loop ####
