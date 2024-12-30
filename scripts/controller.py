@@ -149,8 +149,8 @@ class MPC_Controller:
         self.M_pinv = np.linalg.pinv(self.M)
 
         # Weight matrices
-        self.Q = sparse.diags([100., 100., 100., 100., 100., 100., 10., 10., 10., 10., 10., 10.])
-        self.R = sparse.diags([1., 1., 1., 1., 1., 1.])
+        self.Q = sparse.diags([120., 120., 100., 100., 100., 100., 30., 30., 30., 30., 30., 30.])
+        self.R = sparse.diags([10., 10., 10., 10., 10., 10.])
         
         # Continuous-time state-space model
         self.sys = control.StateSpace(self.A,self.B,self.C,self.D)

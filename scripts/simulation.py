@@ -7,7 +7,7 @@ import argparse
 
 # Parse arguments
 parser = argparse.ArgumentParser(description='Simulate booster landing')
-parser.add_argument('--controller', help='Select controller for simulation', default='LQR', type=str, choices=['LQR', 'MPC'])
+parser.add_argument('--controller', help='Select controller for simulation', default='MPC', type=str, choices=['LQR', 'MPC'])
 args = parser.parse_args()
 
 #### Simulation setup ####
